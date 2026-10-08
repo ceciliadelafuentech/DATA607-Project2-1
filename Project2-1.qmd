@@ -1,0 +1,14 @@
+---
+title: "Project2-1"
+author: "Cecilia De La Fuente Chavez"
+format: html
+execute:
+  echo: true
+editor: visual
+---
+
+## Approach Deliverable
+
+### Overview
+
+For Project 1, I started by exa
