@@ -66,6 +66,8 @@ emissions_long <- df |>
     percent_reduction = parse_number(as.character(percent_reduction))
   ) |>
   select(rating, city, emissions_mpg, percent_reduction)
+
+head(emissions_long)
 ```
 
 Create a tibble containing information about three reference vehicles, including fuel economy, tailpipe CO₂ emissions, and upstream greenhouse gas emissions. Although these values will not be used in this analysis, keeping them in a separate table preserves the reference information for potential future analysis.
@@ -81,6 +83,8 @@ reference_cars <- tibble(
   tailpipe_co2_g_mile = c(178, 202, 296),
   upstream_ghg_g_mile = c(44, 50, 73)
 )
+
+head(reference_cars)
 ```
 
 Calculate summary statistics for the 16 cities, including the number of cities, average, lowest, and highest emissions, and average percentage reduction. The results provide an overview of the differences in estimated PEV emissions.
