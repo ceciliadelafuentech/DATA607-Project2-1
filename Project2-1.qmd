@@ -12,3 +12,137 @@ editor: visual
 ### Overview
 
 The first dataset I chose for Project 2 is a [table from Wikipedia comparing greenhouse gas emissions associated with charging plug-in electric vehicles in different U.S. cities](https://en.wikipedia.org/wiki/Plug-in_electric_vehicles_in_the_United_States#cite_ref-UCS2012EVs_112-0). The data comes from a Union of Concerned Scientists study. Although this is not a “wide” dataset, it is an example of untidy data. The table contains hierarchical and grouped information. The cities are grouped into categories such as “Best,” “Better,” and “Good,” but these categories are presented as section headings rather than as a variable for each city. Some rows contain city data, while other rows contain additional headings such as “Tailpipe CO2” and “Upstream GHG.” This makes it difficult to treat each row as a consistent observation with the same variables. I will restructure the data so that each city is represented through each variable stored in its own column. For the analysis, I could answer the question: "How do the greenhouse gas emissions associated with plug-in electric vehicles vary across U.S. cities?"
+
+## Code Base Deliverable
+
+### Load libraries
+
+```{r}
+library(tidyverse)
+```
+
+### Data and transformations
+
+Load CSV from Github
+
+```{r}
+df <- read_csv(   "https://raw.githubusercontent.com/ceciliadelafuentech/DATA607-Project2-1/refs/heads/main/ghg_emissions_pev.csv" )     
+
+head(df)
+```
+
+Rename the columns to shorter names to make the dataset easier to work with
+
+```{r}
+names(df) <- c(
+  "rating",
+  "city",
+  "emissions_mpg",
+  "percent_reduction",
+  "reference_car",
+  "reference_emissions",
+  "extra1",
+  "extra2"
+)
+
+head(df)
+```
+
+Keep the rating categories and fill them down to match each city with its correct rating. Remove rows without city names, convert the emissions and percentage reduction values to numeric format, and select the four columns needed for analysis.
+
+```{r}
+emissions_long <- df |>
+  mutate(
+    rating = if_else(
+      trimws(rating) %in% c("Best", "Better", "Good"),
+      trimws(rating),
+      NA_character_
+    )
+  ) |>
+  fill(rating, .direction = "down") |>
+  filter(!is.na(city), trimws(city) != "") |>
+  mutate(
+    emissions_mpg = parse_number(as.character(emissions_mpg)),
+    percent_reduction = parse_number(as.character(percent_reduction))
+  ) |>
+  select(rating, city, emissions_mpg, percent_reduction)
+```
+
+Create a tibble containing information about three reference vehicles, including fuel economy, tailpipe CO₂ emissions, and upstream greenhouse gas emissions. Although these values will not be used in this analysis, keeping them in a separate table preserves the reference information for potential future analysis.
+
+```{r}
+reference_cars <- tibble(
+  reference_car = c(
+    "Toyota Prius/Prius c",
+    "Honda Civic Hybrid",
+    "Chevrolet Cruze"
+  ),
+  fuel_economy_mpg = c(50, 44, 30),
+  tailpipe_co2_g_mile = c(178, 202, 296),
+  upstream_ghg_g_mile = c(44, 50, 73)
+)
+```
+
+Calculate summary statistics for the 16 cities, including the number of cities, average, lowest, and highest emissions, and average percentage reduction. The results provide an overview of the differences in estimated PEV emissions.
+
+```{r}
+emissions_summary <- emissions_long |>
+  summarise(
+    number_of_cities = n(),
+    average_mpg = mean(emissions_mpg, na.rm = TRUE),
+    lowest_mpg = min(emissions_mpg, na.rm = TRUE),
+    highest_mpg = max(emissions_mpg, na.rm = TRUE),
+    average_reduction = mean(percent_reduction, na.rm = TRUE)
+  )
+
+emissions_summary
+```
+
+Create a horizontal bar chart comparing emissions-equivalent across the 16 cities. Higher mpg-US values indicate lower estimated greenhouse gas emissions associated with PEV use.
+
+```{r}
+ggplot(
+  emissions_long,
+  aes(x = reorder(city, emissions_mpg), y = emissions_mpg)
+) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "PEV Emissions-Equivalent by City",
+    x = "City",
+    y = "Emissions Equivalent (mpg-US)"
+  ) +
+  theme_minimal()
+```
+
+Identify the three cities with the lowest and highest estimated PEV emissions by sorting cities. It displays each city's rating and percentage reduction to help compare the results. Higher mpg-US values indicate lower estimated emissions, while lower values indicate higher estimated emissions.
+
+```{r}
+# Cities lowest estimated emissions
+emissions_long |>
+  arrange(desc(emissions_mpg)) |>
+  select(city, rating, emissions_mpg, percent_reduction) |>
+  slice_head(n = 3)
+```
+
+```{r}
+# Cities highest estimated emissions
+emissions_long |>
+  arrange(emissions_mpg) |>
+  select(city, rating, emissions_mpg, percent_reduction) |>
+  slice_head(n = 3)
+```
+
+## Conclusion
+
+The dataset was tidied by separating the city names, emissions-equivalent fuel economy values, percentage reductions, and rating categories into separate variables.
+
+The analysis compared estimated plug-in electric vehicle (PEV) greenhouse gas emissions across 16 U.S. cities using an emissions-equivalent fuel economy measure. Juneau, Alaska had the highest value at 112 mpg-US, followed by San Francisco at 79 and New York City at 74. Denver had the lowest value at 33 mpg-US, followed by Wichita, Kansas at 35 and St. Louis, Missouri at 36. The results show considerable variation across cities. Because the measure accounts for emissions associated with electricity generation, these differences show how the environmental benefits of driving a PEV can differ based on where the vehicle is charged.
+
+One limitation is that the analysis uses outdated estimates provided in the original dataset, which may not reflect current electricity generation. Further analysis could compare these results with more recent data to see whether the differences between cities have changed.
+
+## AI Assistance
+
+ChatGPT was used as a supplemental tool to help understand R syntax, troubleshoot code, organize the emissions data, and clarify the steps used to analyze PEV greenhouse gas emissions across U.S. cities (OpenAI, 2026).
+
+OpenAI. (2026). ChatGPT \[Generative AI chat\]. <https://chatgpt.com/>
